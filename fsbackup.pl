@@ -59,6 +59,7 @@ my @fs_dirmask=();     #  d~ - маска для директории. Перв�
 my @fs_notmask=();     #  =! - "НЕ" маска для файла или директории, а не абсолютный путь. Первый или второй символ.
 my @fs_notfilemask=(); #  f! - "НЕ" маска для файла. Первый или второй символ.
 my @fs_notdirmask=();  #  d! - "НЕ" маска для директории. Первый или второй символ.
+my $cfg_event_script; # Скрипт, вызываемый после завершения работы с ключами -i (incremental) и -f (full)
 
 # ------------- Обработка параметров командной строки
 
@@ -175,6 +176,7 @@ if (! -d "$cfg_cache_dir/$cfg_backup_name"){
 ftp_connect();
 
 #----------- Вычисляем уровень инкрементальности.
+my $event_script_flag='i';
 if ($cfg_increment_level != 0 && $cfg_backup_style eq "backup"){
     $cur_increment_level=0;
 
@@ -207,6 +209,7 @@ if ($cfg_increment_level != 0 && $cfg_backup_style eq "backup"){
     if ($cur_increment_level >= $cfg_increment_level){
 	$cfg_new_flag=1;
 	$cfg_clean_flag=1;
+	$event_script_flag='f';
     }
     print "Current increment number: $cur_increment_level\n" if ($cfg_verbose == &VERB_ALL);
 }
@@ -520,6 +523,8 @@ if ( $cfg_type eq "remote_ftp"){
     $ftp->quit;
 }
 print "***** Backup successful complete.\n" if ($cfg_verbose == &VERB_ALL);
+# call the incremental hook
+system("$cfg_event_script -$event_script_flag") if defined $cfg_event_script and $cfg_event_script =~ /\w+/;
 exit (0);
 
 
@@ -969,6 +974,15 @@ Operation priority:
     6. d~
     7. !path
     8. path
+
+=item B<my $cfg_event_script> = ''
+
+The external script which runs after successful backup.
+
+The command line keys are:
+
+-i 	was an incremental backup
+-f 	was a full backup
 
 =back
 
